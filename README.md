@@ -1,5 +1,3 @@
-<img width="541" height="704" alt="Screenshot 2026-05-14 at 11 05 00 AM" src="https://github.com/user-attachments/assets/5c73939d-15ff-45e6-87ba-0accda7c9d1b" /># FortiCLI Reference
-
 > AI-generated Fortinet CLI cheat sheets and FortiOS version diffs, with PDF export. **Bring your own Anthropic API key** — no server, no backend, no account, no telemetry.
 
 > **⚠️ Independent project — not a Fortinet GitHub account.**
@@ -61,9 +59,15 @@ The diff covers the **entire FortiOS CLI surface** — system, routing, VPN, SD-
 
 ## Screenshots / output
 
-![Upload<img width="541" height="704" alt="Screenshot 2026-05-14 at 11 04 55 AM" src="https://github.com/user-attachments/assets/2c7742cf-a7c0-425d-9942-4bacb5490339" /><img width="541" height="704" alt="Screenshot 2026-05-14 at 11 04 32 AM" src="https://github.com/user-attachments/assets/4d1c0a98-41bd-473f-9161-db75a79bab2e" />
-[fortigate-cli-diff-7-0-x-to-7-4-x.pdf](https://github.com/user-attachments/files/27771378/fortigate-cli-diff-7-0-x-to-7-4-x.pdf)
-ing Screenshot 2026-05-14 at 11.05.00 AM.png…]()
+<img width="1080" height="681" alt="Screenshot 2026-05-14 at 11 10 00 AM" src="https://github.com/user-attachments/assets/f0f1c569-d53d-4c89-aa39-c84c38c602a8" />
+
+<img width="541" height="704" alt="Screenshot 2026-05-14 at 11 04 32 AM" src="https://github.com/user-attachments/assets/8a8cb388-02d5-468c-a2ac-7d78d8d381e1" />
+
+<img width="1071" height="552" alt="Screenshot 2026-05-14 at 11 10 16 AM" src="https://github.com/user-attachments/assets/3da45a2d-77b2-42e9-abe1-fef1fc6b4438" />
+
+<img width="541" height="704" alt="Screenshot 2026-05-14 at 11 04 55 AM" src="https://github.com/user-attachments/assets/58e2cda6-7721-4cfd-9ec0-01e3a227b6d8" />
+
+<img width="541" height="704" alt="Screenshot 2026-05-14 at 11 05 00 AM" src="https://github.com/user-attachments/assets/9d93466a-8fde-406f-ad1b-8b32ffd172bc" />
 
 
 PDFs include:
