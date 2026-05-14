@@ -1,0 +1,25 @@
+{
+  "name": "forticli",
+  "version": "1.0.0",
+  "private": false,
+  "description": "AI-powered Fortinet CLI cheat sheets and FortiOS version diffs with PDF export. BYOK — bring your own Anthropic API key.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}
