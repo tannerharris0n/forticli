@@ -1,4 +1,4 @@
-# FortiCLI Reference
+<img width="541" height="704" alt="Screenshot 2026-05-14 at 11 05 00 AM" src="https://github.com/user-attachments/assets/5c73939d-15ff-45e6-87ba-0accda7c9d1b" /># FortiCLI Reference
 
 > AI-generated Fortinet CLI cheat sheets and FortiOS version diffs, with PDF export. **Bring your own Anthropic API key** — no server, no backend, no account, no telemetry.
 
@@ -61,7 +61,10 @@ The diff covers the **entire FortiOS CLI surface** — system, routing, VPN, SD-
 
 ## Screenshots / output
 
-*(Add screenshots here after first deploy — the poster view in particular looks great.)*
+![Upload<img width="541" height="704" alt="Screenshot 2026-05-14 at 11 04 55 AM" src="https://github.com/user-attachments/assets/2c7742cf-a7c0-425d-9942-4bacb5490339" /><img width="541" height="704" alt="Screenshot 2026-05-14 at 11 04 32 AM" src="https://github.com/user-attachments/assets/4d1c0a98-41bd-473f-9161-db75a79bab2e" />
+[fortigate-cli-diff-7-0-x-to-7-4-x.pdf](https://github.com/user-attachments/files/27771378/fortigate-cli-diff-7-0-x-to-7-4-x.pdf)
+ing Screenshot 2026-05-14 at 11.05.00 AM.png…]()
+
 
 PDFs include:
 - Fortinet-red accent line and headers
