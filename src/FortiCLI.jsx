@@ -237,16 +237,90 @@ function hexToRgb(hex) {
 }
 
 // ─── Fortinet docs URL builder ───
-const PRODUCT_DOC_SLUG = {
-  "FortiGate": "fortigate",
-  "FortiSwitch": "fortiswitch",
-  "FortiAP": "fortiap",
-  "FortiAnalyzer": "fortianalyzer",
-  "FortiManager": "fortimanager",
-  "FortiAuthenticator": "fortiauthenticator",
-  "FortiDeceptor": "fortideceptor",
-  "FortiNAC": "fortinac-f",
-  "FortiProxy": "fortiproxy",
+// Per-product config of which doc types exist on docs.fortinet.com. Only
+// list a link when we've verified the corresponding page actually resolves
+// — broken links are worse than missing ones. To add a new doc type for a
+// product: append { key, label, suffix } where suffix is the third URL
+// segment after /document/<slug>/<version>/, or "" for the product hub.
+//
+// Notes on omissions:
+//   - FortiAuthenticator, FortiDeceptor, FortiNAC: no public CLI reference
+//     (GUI/REST-managed). CLI Reference link is suppressed.
+//   - Release-notes slugs vary per product (fortios-release-notes vs.
+//     fortianalyzer-release-notes vs ...) so we only emit the link where
+//     we know the exact slug. Product hub leads to release notes anyway.
+//   - "What's New" (new-features) is currently FortiGate-only.
+const PRODUCT_DOCS = {
+  "FortiGate": {
+    slug: "fortigate",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "cliReference", label: "CLI Reference", suffix: "cli-reference" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+      { key: "releaseNotes", label: "Release Notes", suffix: "fortios-release-notes" },
+      { key: "newFeatures", label: "What's New", suffix: "new-features" },
+    ],
+  },
+  "FortiSwitch": {
+    slug: "fortiswitch",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "cliReference", label: "CLI Reference", suffix: "cli-reference" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
+  "FortiAP": {
+    slug: "fortiap",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
+  "FortiAnalyzer": {
+    slug: "fortianalyzer",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "cliReference", label: "CLI Reference", suffix: "cli-reference" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
+  "FortiManager": {
+    slug: "fortimanager",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "cliReference", label: "CLI Reference", suffix: "cli-reference" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
+  "FortiAuthenticator": {
+    slug: "fortiauthenticator",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
+  "FortiDeceptor": {
+    slug: "fortideceptor",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
+  "FortiNAC": {
+    slug: "fortinac-f",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
+  "FortiProxy": {
+    slug: "fortiproxy",
+    links: [
+      { key: "productHub", label: "Product hub", suffix: "" },
+      { key: "cliReference", label: "CLI Reference", suffix: "cli-reference" },
+      { key: "adminGuide", label: "Admin Guide", suffix: "administration-guide" },
+    ],
+  },
 };
 
 // Resolve a version input to a specific release that docs.fortinet.com will
@@ -271,16 +345,18 @@ function resolveDocVersion(input, knownVersions = []) {
 }
 
 function fortiDocs(product, version, knownVersions = []) {
-  const slug = PRODUCT_DOC_SLUG[product] || String(product || '').toLowerCase();
+  const cfg = PRODUCT_DOCS[product];
+  if (!cfg) return null;
   const v = resolveDocVersion(version, knownVersions);
-  if (!slug || !v) return null;
+  if (!v) return null;
   return {
-    productHub: `https://docs.fortinet.com/product/${slug}/${v}`,
-    cliReference: `https://docs.fortinet.com/document/${slug}/${v}/cli-reference`,
-    adminGuide: `https://docs.fortinet.com/document/${slug}/${v}/administration-guide`,
-    releaseNotes: `https://docs.fortinet.com/document/${slug}/${v}/fortios-release-notes`,
-    newFeatures: `https://docs.fortinet.com/document/${slug}/${v}/new-features`,
     resolvedVersion: v,
+    links: cfg.links.map(({ key, label, suffix }) => ({
+      key, label,
+      url: suffix
+        ? `https://docs.fortinet.com/document/${cfg.slug}/${v}/${suffix}`
+        : `https://docs.fortinet.com/product/${cfg.slug}/${v}`,
+    })),
   };
 }
 
@@ -746,7 +822,7 @@ function DocLink({ href, children }) {
 }
 
 function DocsPanel({ entries }) {
-  const valid = entries.filter(e => e && e.docs);
+  const valid = entries.filter(e => e && e.docs && (e.docs.links || []).length > 0);
   if (valid.length === 0) return null;
   return (
     <div style={{
@@ -760,11 +836,12 @@ function DocsPanel({ entries }) {
       }}>Fortinet documentation</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {valid.map((e, i) => {
-          // Show the resolved version next to the label when the input was a
-          // branch (e.g. "7.4.x" → docs for "7.4.7").
           const resolved = e.docs.resolvedVersion;
           const labelVer = e.label.split(' ').slice(-1)[0];
           const showResolved = resolved && resolved !== labelVer;
+          const excluded = new Set(e.exclude || []);
+          const links = e.docs.links.filter(l => !excluded.has(l.key));
+          if (links.length === 0) return null;
           return (
             <div key={i} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ fontSize: '12.5px', fontWeight: '600', color: T.text, minWidth: '160px', fontFamily: fonts.mono }}>
@@ -775,11 +852,7 @@ function DocsPanel({ entries }) {
                   </span>
                 )}
               </div>
-              <DocLink href={e.docs.productHub}>Product hub</DocLink>
-              <DocLink href={e.docs.cliReference}>CLI Reference</DocLink>
-              <DocLink href={e.docs.adminGuide}>Admin Guide</DocLink>
-              <DocLink href={e.docs.releaseNotes}>Release Notes</DocLink>
-              {e.showNewFeatures && <DocLink href={e.docs.newFeatures}>What's New</DocLink>}
+              {links.map(l => <DocLink key={l.key} href={l.url}>{l.label}</DocLink>)}
             </div>
           );
         })}
@@ -903,7 +976,7 @@ function CheatSheetTab({ versions, onNeedApiKey }) {
           </div>
         </div>
 
-        <DocsPanel entries={[{ label: `${product} ${version}`, docs: fortiDocs(product, version, productVersions), showNewFeatures: true }]} />
+        <DocsPanel entries={[{ label: `${product} ${version}`, docs: fortiDocs(product, version, productVersions) }]} />
 
         {error && (
           <div style={{ color: T.red, fontSize: '13px', marginBottom: '14px', padding: '12px 14px', background: T.redDim, borderRadius: '8px' }}>
@@ -1063,8 +1136,8 @@ function DiffTab({ versions, onNeedApiKey }) {
 
   const fortigateVersions = versions.cheatsheet?.FortiGate || [];
   const docsEntries = [
-    { label: `FortiGate ${fromVer}`, docs: fortiDocs('FortiGate', fromVer, fortigateVersions), showNewFeatures: false },
-    { label: `FortiGate ${toVer}`, docs: fortiDocs('FortiGate', toVer, fortigateVersions), showNewFeatures: true },
+    { label: `FortiGate ${fromVer}`, docs: fortiDocs('FortiGate', fromVer, fortigateVersions), exclude: ['newFeatures'] },
+    { label: `FortiGate ${toVer}`, docs: fortiDocs('FortiGate', toVer, fortigateVersions) },
   ];
 
   return (
