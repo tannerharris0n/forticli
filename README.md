@@ -2,9 +2,11 @@
 
 > AI-generated Fortinet CLI cheat sheets and FortiOS version diffs, with PDF export. **Bring your own Anthropic API key** — no server, no backend, no account, no telemetry.
 
-FortiCLI is a 100% static single-page app. You paste your Anthropic API key once, it lives in your browser's `localStorage`, and every request goes **directly** from your browser to `api.anthropic.com`. No middleman, no database, no analytics. Clone it, host it anywhere, fork it, or just run it locally.
+> **⚠️ Independent project — not a Fortinet GitHub account.**
+>
+> This repository is **not** a Fortinet GitHub account, repository, or product. FortiCLI is built and maintained independently by [Tanner Harrison](https://tannerharrison.com) and is **not** endorsed, sponsored, reviewed, or supported by Fortinet, Inc. Views and code here are the maintainer's own and do not represent any employer. All Fortinet product names, trademarks, and logos are property of Fortinet, Inc. Output is AI-generated — always validate against the [official Fortinet documentation](https://docs.fortinet.com) before applying CLI to production gear.
 
-**Not affiliated with Fortinet, Inc.** Output is AI-generated — always validate against the [official Fortinet documentation](https://docs.fortinet.com) before applying CLI to production gear.
+FortiCLI is a 100% static single-page app. You paste your Anthropic API key once, it lives in your browser's `localStorage`, and every request goes **directly** from your browser to `api.anthropic.com`. No middleman, no database, no analytics. Clone it, host it anywhere, fork it, or just run it locally.
 
 ---
 
@@ -406,4 +408,4 @@ Code style: vanilla React 18, no TypeScript, inline styles from `theme.js`. Sing
 
 ---
 
-**FortiCLI** · Built by [Tanner Harrison](https://tannerharrison.com) · [github.com/tannerharris0n/forticli](https://github.com/tannerharris0n/forticli) · Not affiliated with Fortinet, Inc.
+**FortiCLI** · Built independently by [Tanner Harrison](https://tannerharrison.com) · [github.com/tannerharris0n/forticli](https://github.com/tannerharris0n/forticli) · Not a Fortinet GitHub account · Not affiliated with, endorsed by, or supported by Fortinet, Inc.
