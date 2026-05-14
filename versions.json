@@ -4,12 +4,13 @@
     "note": "Single source of truth for the firmware version dropdowns. Only list versions where the official docs at docs.fortinet.com/product/<slug>/<version> actually resolve. To add a new release: edit this file, commit, push to main. All deployed clients pick it up within 24 hours (sooner if they clear cache).",
     "schema": {
       "cheatsheet": "object: product name -> array of specific firmware versions (e.g. '7.4.4'). Listed newest first.",
-      "diffBranches": "array of FortiOS branch tags (e.g. '7.4.x'). Used for the Version Diff dropdowns."
+      "diffBranches": "array of FortiOS branch tags (e.g. '7.4.x'). Used for the Version Diff dropdowns. The docs resolver maps these to the newest specific release in that branch from the FortiGate list."
     }
   },
   "cheatsheet": {
     "FortiGate": [
-      "7.6.2", "7.6.1", "7.6.0",
+      "8.0.0",
+      "7.6.6", "7.6.5", "7.6.4", "7.6.3", "7.6.2", "7.6.1", "7.6.0",
       "7.4.7", "7.4.6", "7.4.5", "7.4.4", "7.4.3", "7.4.2", "7.4.1", "7.4.0",
       "7.2.11", "7.2.10", "7.2.9", "7.2.8", "7.2.7",
       "7.0.17", "7.0.16", "7.0.15", "7.0.14",
@@ -59,5 +60,5 @@
       "7.0.13", "7.0.12"
     ]
   },
-  "diffBranches": ["7.6.x", "7.4.x", "7.2.x", "7.0.x", "6.4.x", "6.2.x"]
+  "diffBranches": ["8.0.x", "7.6.x", "7.4.x", "7.2.x", "7.0.x", "6.4.x", "6.2.x"]
 }

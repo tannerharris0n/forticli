@@ -249,13 +249,30 @@ const PRODUCT_DOC_SLUG = {
   "FortiProxy": "fortiproxy",
 };
 
-function normalizeDocVersion(v) {
-  return String(v || '').trim().replace(/\.x$/i, '');
+// Resolve a version input to a specific release that docs.fortinet.com will
+// actually serve. The /document/<slug>/<version>/<doc-type> routes only work
+// with full release tags (e.g. "7.4.4"), not branch tags ("7.4.x") or majors
+// ("7.4"). For a branch input we look up the newest specific version in that
+// branch from the versions list. If we can't resolve it, we return null so
+// the docs panel hides instead of linking to 404s.
+function resolveDocVersion(input, knownVersions = []) {
+  const raw = String(input || '').trim();
+  if (!raw) return null;
+  // Already a full release tag (x.y.z)
+  if (/^\d+\.\d+\.\d+/.test(raw)) return raw;
+  // Branch tag like "7.4.x" → find newest "7.4.*"
+  const branchMatch = raw.match(/^(\d+\.\d+)(?:\.x)?$/i);
+  if (branchMatch) {
+    const prefix = branchMatch[1] + '.';
+    const found = knownVersions.find(v => v.startsWith(prefix));
+    if (found) return found;
+  }
+  return null;
 }
 
-function fortiDocs(product, version) {
+function fortiDocs(product, version, knownVersions = []) {
   const slug = PRODUCT_DOC_SLUG[product] || String(product || '').toLowerCase();
-  const v = normalizeDocVersion(version);
+  const v = resolveDocVersion(version, knownVersions);
   if (!slug || !v) return null;
   return {
     productHub: `https://docs.fortinet.com/product/${slug}/${v}`,
@@ -263,6 +280,7 @@ function fortiDocs(product, version) {
     adminGuide: `https://docs.fortinet.com/document/${slug}/${v}/administration-guide`,
     releaseNotes: `https://docs.fortinet.com/document/${slug}/${v}/fortios-release-notes`,
     newFeatures: `https://docs.fortinet.com/document/${slug}/${v}/new-features`,
+    resolvedVersion: v,
   };
 }
 
@@ -741,16 +759,30 @@ function DocsPanel({ entries }) {
         marginBottom: '10px', fontFamily: fonts.mono,
       }}>Fortinet documentation</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {valid.map((e, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ fontSize: '12.5px', fontWeight: '600', color: T.text, minWidth: '160px', fontFamily: fonts.mono }}>{e.label}</div>
-            <DocLink href={e.docs.productHub}>Product hub</DocLink>
-            <DocLink href={e.docs.cliReference}>CLI Reference</DocLink>
-            <DocLink href={e.docs.adminGuide}>Admin Guide</DocLink>
-            <DocLink href={e.docs.releaseNotes}>Release Notes</DocLink>
-            {e.showNewFeatures && <DocLink href={e.docs.newFeatures}>What's New</DocLink>}
-          </div>
-        ))}
+        {valid.map((e, i) => {
+          // Show the resolved version next to the label when the input was a
+          // branch (e.g. "7.4.x" → docs for "7.4.7").
+          const resolved = e.docs.resolvedVersion;
+          const labelVer = e.label.split(' ').slice(-1)[0];
+          const showResolved = resolved && resolved !== labelVer;
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: '600', color: T.text, minWidth: '160px', fontFamily: fonts.mono }}>
+                {e.label}
+                {showResolved && (
+                  <span style={{ fontSize: '11px', color: T.textDim, fontWeight: '400', marginLeft: '6px' }}>
+                    → {resolved}
+                  </span>
+                )}
+              </div>
+              <DocLink href={e.docs.productHub}>Product hub</DocLink>
+              <DocLink href={e.docs.cliReference}>CLI Reference</DocLink>
+              <DocLink href={e.docs.adminGuide}>Admin Guide</DocLink>
+              <DocLink href={e.docs.releaseNotes}>Release Notes</DocLink>
+              {e.showNewFeatures && <DocLink href={e.docs.newFeatures}>What's New</DocLink>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -871,7 +903,7 @@ function CheatSheetTab({ versions, onNeedApiKey }) {
           </div>
         </div>
 
-        <DocsPanel entries={[{ label: `${product} ${version.trim()}`, docs: fortiDocs(product, version), showNewFeatures: true }]} />
+        <DocsPanel entries={[{ label: `${product} ${version}`, docs: fortiDocs(product, version, productVersions), showNewFeatures: true }]} />
 
         {error && (
           <div style={{ color: T.red, fontSize: '13px', marginBottom: '14px', padding: '12px 14px', background: T.redDim, borderRadius: '8px' }}>
@@ -1029,9 +1061,10 @@ function DiffTab({ versions, onNeedApiKey }) {
     }
   };
 
+  const fortigateVersions = versions.cheatsheet?.FortiGate || [];
   const docsEntries = [
-    { label: `FortiGate ${fromVer.trim()}`, docs: fortiDocs('FortiGate', fromVer), showNewFeatures: false },
-    { label: `FortiGate ${toVer.trim()}`, docs: fortiDocs('FortiGate', toVer), showNewFeatures: true },
+    { label: `FortiGate ${fromVer}`, docs: fortiDocs('FortiGate', fromVer, fortigateVersions), showNewFeatures: false },
+    { label: `FortiGate ${toVer}`, docs: fortiDocs('FortiGate', toVer, fortigateVersions), showNewFeatures: true },
   ];
 
   return (
