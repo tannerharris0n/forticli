@@ -215,15 +215,27 @@ Edit this file to change the default model, add new model options, or remove one
 
 ### `src/FortiCLI.jsx`
 
-Top-of-file constants control product/category/version metadata:
+Top-of-file constants control product/category metadata:
 
 - `PRODUCTS` — product dropdown
 - `PRODUCT_CATS` — categories per product
-- `PRODUCT_VERS` — datalist version suggestions per product
-- `FGT_DIFF_VERS` — version suggestions for the diff inputs
 - `PRODUCT_DOC_SLUG` — maps display name to `docs.fortinet.com` URL slug
 
 The system prompts and JSON shapes for both features are in this file too — search for `CHEAT_SYSTEM`, `DIFF_SYSTEM`, `buildCheatPrompt`, `buildDiffPrompt`.
+
+### `versions.json` — handling new firmware releases
+
+Firmware version dropdowns are populated from `versions.json` at the repo root. **This is the single source of truth.** When Fortinet ships a new release:
+
+1. Edit `versions.json` on `main` — add the new version string to the relevant product array (newest first)
+2. `git commit -m "versions: add FortiGate 7.6.3"` and push
+3. **Every deployed instance picks it up automatically within 24 hours** — the app fetches `versions.json` from `raw.githubusercontent.com/tannerharris0n/forticli/main/versions.json` on load, caches it in `localStorage` with a 24h TTL, and falls back to the bundled snapshot if the fetch fails
+
+This means a single PR can update dropdowns for the standalone deploy, anyone's fork, and any other app that points to the same URL (the maintainer's adhd-tools instance does, for example).
+
+If the remote fetch fails (offline, repo down, CORS hiccup), the bundled `FALLBACK_VERSIONS` in `src/versions.js` keeps the app working — keep that copy in sync with `versions.json` when you cut a release.
+
+**Validation rule:** only list a version if `https://docs.fortinet.com/product/<slug>/<version>` actually resolves. The "Fortinet documentation" panel in the UI links straight there, and broken links are worse than missing versions.
 
 ### `max_tokens`
 

@@ -1,12 +1,147 @@
 // FortiCLI Reference — standalone, BYOK, static-only.
 // AI-generated CLI cheat sheets and FortiOS version diffs with PDF export.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { callClaude } from './api';
 import { theme as T, fonts } from './theme';
 import { FORTI_RED } from './config';
+import { loadVersions, FALLBACK_VERSIONS } from './versions';
+
+// ═══════════════════════════════════════════════════════════════════
+// LOADING PANEL — status messages + dad jokes (Fortinet/network flavored)
+// ═══════════════════════════════════════════════════════════════════
+const CHEAT_STATUSES = [
+  'Asking Claude for the most useful commands...',
+  'Cross-referencing Fortinet syntax for your firmware...',
+  'Filling out each category...',
+  'Polishing command examples...',
+  'Adding caveats and gotchas...',
+  'Laying it out poster-style...',
+  'Almost there — wrapping it up...',
+];
+
+const DIFF_STATUSES = [
+  'Asking Claude to compare FortiOS releases...',
+  'Hunting down newly-added CLI...',
+  'Tracking syntax changes between versions...',
+  'Cataloging deprecated commands...',
+  'Tagging each entry with its functional area...',
+  'Drafting the executive summary...',
+  'Almost there — wrapping it up...',
+];
+
+const DAD_JOKES = [
+  "Why did the firewall go to therapy? It had too many trust issues.",
+  "I told my router a joke. It didn't get it — must have been over its head.",
+  "What did one firewall say to the other? \"I'd allow you, but I have a strict policy.\"",
+  "Why was VLAN 1 always in trouble? It was always tagged.",
+  "Why don't packets like the dark? There's no light at the end of the tunnel... mode.",
+  "Why did the SSL certificate go to therapy? It had attachment issues.",
+  "How does a firewall flirt? It sends ICMP echo requests.",
+  "What's a network engineer's favorite drink? A LAN-ade.",
+  "Why did the BGP route cross the road? To get to the other AS.",
+  "I asked the router for directions. It said it'd get back to me in 30 seconds.",
+  "Why do network engineers hate camping? Too many access points.",
+  "Why was the SD-WAN smug? It said MPLS was \"so 2010.\"",
+  "Why don't NAT rules work in elevators? They always translate up.",
+  "I'm reading a book about anti-gravity. It's impossible to put down.",
+  "What do you call cheese that isn't yours? Nacho cheese.",
+  "Why don't scientists trust atoms? They make up everything.",
+  "Why did the IPv6 packet feel left out? Nobody understood it.",
+  "Why was the FortiGate so calm? Great policies.",
+  "What did the SOC analyst order at the buffet? Phish and grits.",
+  "Why did the switch break up with the hub? Too much collision.",
+  "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+  "I would tell you a UDP joke, but you might not get it.",
+  "Why don't TCP packets fight? They reach an agreement with a handshake first.",
+  "Why was the DNS server bad at small talk? It kept saying, \"let me ask someone else.\"",
+  "Why did the network admin go broke? Too many subnets to pay off.",
+  "What's a hacker's favorite snack? Cookies.",
+  "I started a band called 1023MB. We still haven't gotten a gig.",
+  "Why was the OSI model so patient? It had layers.",
+  "Why did the FortiAnalyzer feel overwhelmed? Too many logs to chop.",
+  "Why did the CLI command get mad? Someone disabled it without saving.",
+  "What did the packet say after a long trip? \"I'm just glad to be on the right route.\"",
+  "Why was the IPS so confident? It always saw it coming.",
+  "Why did the certificate cross the road? It had a CA on the other side.",
+  "What's a sysadmin's favorite kind of music? Heavy metal — they love a good drive.",
+  "Why don't networks like surprises? They prefer scheduled maintenance.",
+];
+
+function LoadingPanel({ statusMessages, jokes }) {
+  const [statusIdx, setStatusIdx] = useState(0);
+  const [jokeIdx, setJokeIdx] = useState(() => Math.floor(Math.random() * jokes.length));
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const ticker = setInterval(() => setElapsed(e => e + 1), 1000);
+    const statusRot = setInterval(() => setStatusIdx(i => (i + 1) % statusMessages.length), 3500);
+    const jokeRot = setInterval(() => setJokeIdx(i => (i + 1) % jokes.length), 7000);
+    return () => { clearInterval(ticker); clearInterval(statusRot); clearInterval(jokeRot); };
+  }, [statusMessages.length, jokes.length]);
+
+  const nextJoke = () => setJokeIdx(i => (i + 1) % jokes.length);
+
+  return (
+    <div style={{
+      background: T.surface, border: `1px solid ${T.border}`,
+      borderRadius: '14px', padding: '24px', marginBottom: '24px',
+      animation: 'fadeIn 0.25s ease',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+        <div style={{
+          width: '28px', height: '28px',
+          border: `3px solid ${T.border}`, borderTop: `3px solid ${T.accent}`,
+          borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+          flexShrink: 0,
+        }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: T.text, lineHeight: '1.4' }}>
+            {statusMessages[statusIdx]}
+          </div>
+          <div style={{
+            fontSize: '11.5px', color: T.textFaint, marginTop: '4px',
+            fontFamily: fonts.mono, letterSpacing: '0.3px',
+          }}>
+            {elapsed}s elapsed
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '16px 18px', background: T.surfaceAlt,
+        border: `1px solid ${T.border}`, borderRadius: '12px',
+        position: 'relative',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: '10px',
+        }}>
+          <div style={{
+            fontSize: '10.5px', fontWeight: '600', color: T.accent,
+            letterSpacing: '0.7px', textTransform: 'uppercase', fontFamily: fonts.mono,
+          }}>
+            A dad joke while you wait
+          </div>
+          <button onClick={nextJoke} style={{
+            fontSize: '11px', color: T.textDim, background: 'transparent',
+            border: `1px solid ${T.border}`, padding: '3px 10px',
+            borderRadius: '999px', cursor: 'pointer', fontFamily: fonts.mono,
+            fontWeight: '500',
+          }}>next ↻</button>
+        </div>
+        <div key={jokeIdx} style={{
+          fontSize: '14.5px', color: T.text, lineHeight: '1.55',
+          animation: 'fadeIn 0.3s ease', fontStyle: 'italic',
+        }}>
+          {jokes[jokeIdx]}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // DATA
@@ -25,19 +160,9 @@ const PRODUCT_CATS = {
   "FortiProxy": ["System & Admin","Proxy Policies","Web Filtering","SSL Inspection","Authentication","Debugging"],
 };
 
-const PRODUCT_VERS = {
-  "FortiGate": ["7.6.1","7.4.4","7.4.3","7.2.9","7.0.15","6.4.15"],
-  "FortiSwitch": ["7.4.3","7.2.7","7.0.8","6.4.6"],
-  "FortiAP": ["7.4.3","7.2.6","7.0.5"],
-  "FortiAnalyzer": ["7.6.1","7.4.3","7.2.7","7.0.8"],
-  "FortiManager": ["7.6.1","7.4.3","7.2.7","7.0.8"],
-  "FortiAuthenticator": ["7.0.2","6.6.1","6.4.3"],
-  "FortiDeceptor": ["6.0.2","5.3.1"],
-  "FortiNAC": ["10.3.5","9.4.7"],
-  "FortiProxy": ["7.4.3","7.2.8","7.0.12"],
-};
-
-const FGT_DIFF_VERS = ["7.6.x","7.4.x","7.2.x","7.0.x","6.4.x","6.2.x"];
+// Firmware version lists are loaded at runtime from versions.json — see
+// src/versions.js. PRODUCT_VERS / FGT_DIFF_VERS used to live here; they now
+// arrive as props (passed down from the root component via state).
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPERS
@@ -147,7 +272,7 @@ function fortiDocs(product, version) {
 const CHEAT_SYSTEM = `You are a senior Fortinet network security engineer. Return ONLY valid JSON, no markdown fences, no preamble. Use real CLI syntax.`;
 
 function buildCheatPrompt(product, version, categories) {
-  return `Generate a CLI cheat sheet for ${product} firmware ${version}.
+  return `Generate a tight, scannable CLI cheat sheet for ${product} firmware ${version}.
 
 Categories to cover: ${categories.join(', ')}
 
@@ -159,18 +284,18 @@ Return JSON in this exact shape:
     {
       "name": "category name",
       "commands": [
-        { "description": "short, action-oriented", "command": "exact CLI syntax including 'config ... end' blocks where appropriate", "notes": "optional context, caveats, or gotchas" }
+        { "description": "very short label, ideally 3-7 words", "command": "exact CLI syntax", "notes": "optional, only for real gotchas" }
       ]
     }
   ]
 }
 
-Rules:
-- 6 to 10 commands per section.
+Rules — optimize for SPEED and DENSITY:
+- 4 to 6 commands per section. Pick the most-used, highest-value ones.
+- Descriptions: 3-7 words, action-oriented. NOT full sentences.
+- Commands: minimal but complete. Show the essential lines of a config block only — not every option. Multi-line: use \\n.
+- Notes: omit unless there's a non-obvious gotcha. Skip them by default.
 - One section per requested category, in the order given.
-- Use real, copy-pasteable CLI. Show full config blocks for set/edit/next/end where it matters.
-- Multi-line commands: use \\n inside the JSON string.
-- Notes field is optional — only include when there is a real caveat or gotcha. Omit otherwise.
 - No commentary outside the JSON.`;
 }
 
@@ -201,69 +326,174 @@ Rules:
 // ═══════════════════════════════════════════════════════════════════
 // PDF EXPORT — CHEAT SHEET
 // ═══════════════════════════════════════════════════════════════════
+// Poster-style cheat sheet PDF — three-column layout, color-coded section
+// blocks, Fortinet-red top banner, wall-ready. Built with raw jsPDF (no
+// autotable) so we can flow sections into columns the way a real cheat sheet
+// poster does.
 function exportCheatSheetPDF(sheet) {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const margin = 40;
   const date = todayStr();
-  const fortiRGB = hexToRgb(FORTI_RED);
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`${sheet.product} CLI Reference`, margin, margin + 10);
+  const margin = 30;
+  const numCols = 3;
+  const gutter = 14;
+  const colW = (pageW - margin * 2 - gutter * (numCols - 1)) / numCols;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Firmware v${sheet.version}  ·  Generated ${date}`, margin, margin + 30);
+  const headerH = 78;
+  const footerH = 26;
+  const colTop = margin + headerH + 8;
+  const colBottom = pageH - footerH;
 
-  doc.setDrawColor(...fortiRGB);
-  doc.setLineWidth(2);
-  doc.line(margin, margin + 42, pageW - margin, margin + 42);
+  // Section header palette — rotates across sections for the poster look.
+  const SECTION_PALETTE = [
+    [218, 41, 28],   // Fortinet red
+    [31, 41, 55],    // slate
+    [29, 78, 216],   // deep blue
+    [22, 101, 52],   // forest
+    [146, 64, 14],   // amber
+    [67, 56, 202],   // indigo
+    [157, 23, 77],   // magenta
+    [21, 94, 117],   // teal-dark
+  ];
 
-  let cursorY = margin + 60;
+  let curCol = 0;
+  let curY = colTop;
 
-  (sheet.sections || []).forEach((section, idx) => {
-    if (cursorY > pageH - 120) { doc.addPage(); cursorY = margin; }
+  const colX = (idx) => margin + idx * (colW + gutter);
 
+  const drawHeader = () => {
+    // Solid Fortinet-red banner
+    doc.setFillColor(218, 41, 28);
+    doc.rect(0, 0, pageW, headerH, 'F');
+
+    // Title
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(...fortiRGB);
-    doc.text(section.name, margin, cursorY);
-    cursorY += 8;
+    doc.setFontSize(26);
+    doc.text(`${sheet.product}`, margin, 38);
 
-    const rows = (section.commands || []).map(c => [c.description || '', c.command || '', c.notes || '']);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text('CLI REFERENCE', margin, 56);
 
-    autoTable(doc, {
-      startY: cursorY + 4,
-      head: [['Description', 'Command', 'Notes']],
-      body: rows,
-      margin: { left: margin, right: margin },
-      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 5, valign: 'top', overflow: 'linebreak', lineColor: [228, 226, 221], lineWidth: 0.4 },
-      headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { textColor: [40, 40, 40] },
-      alternateRowStyles: { fillColor: [248, 247, 244] },
-      columnStyles: {
-        0: { cellWidth: 130, fontStyle: 'italic', textColor: [90, 90, 90] },
-        1: { cellWidth: 270, font: 'courier', fontStyle: 'bold', fontSize: 8, textColor: [20, 20, 20] },
-        2: { cellWidth: 'auto', textColor: [110, 110, 110], fontSize: 8 },
-      },
-      didDrawPage: () => {
-        const fy = pageH - 22;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(140, 140, 140);
-        doc.text(`FortiCLI Reference — ${sheet.product} v${sheet.version} — Generated ${date}`, margin, fy);
-        doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageW - margin, fy, { align: 'right' });
-      },
+    // Version + date on the right
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`v${sheet.version}`, pageW - margin, 38, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(date.toUpperCase(), pageW - margin, 54, { align: 'right' });
+
+    // Thin underline
+    doc.setFillColor(255, 255, 255);
+    doc.rect(margin, headerH - 6, pageW - margin * 2, 0.8, 'F');
+  };
+
+  const drawFooter = () => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(140, 140, 140);
+    doc.text(
+      `FortiCLI Reference  ·  ${sheet.product} v${sheet.version}  ·  Generated ${date}`,
+      margin, pageH - 12
+    );
+    doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageW - margin, pageH - 12, { align: 'right' });
+    // AI-generated disclaimer in small text, center-bottom
+    doc.setTextColor(180, 180, 180);
+    doc.setFontSize(6.5);
+    doc.text(
+      'AI-generated — always validate against docs.fortinet.com before applying to production.',
+      pageW / 2, pageH - 12, { align: 'center' }
+    );
+  };
+
+  const advanceColumn = () => {
+    curCol++;
+    if (curCol >= numCols) {
+      drawFooter();
+      doc.addPage();
+      drawHeader();
+      curCol = 0;
+    }
+    curY = colTop;
+  };
+
+  drawHeader();
+
+  (sheet.sections || []).forEach((section, sIdx) => {
+    const color = SECTION_PALETTE[sIdx % SECTION_PALETTE.length];
+    const sectionHeaderH = 18;
+    const sectionGap = 12;
+
+    // Reserve room for the section header + at least one command line.
+    // If we don't have ~60pt left in the current column, move on.
+    if (curY + 70 > colBottom && curY !== colTop) {
+      advanceColumn();
+    }
+
+    // Section header bar
+    doc.setFillColor(...color);
+    doc.roundedRect(colX(curCol), curY, colW, sectionHeaderH, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    const sectionName = (section.name || '').toUpperCase();
+    doc.text(sectionName, colX(curCol) + 7, curY + 12);
+    curY += sectionHeaderH + 4;
+
+    // Commands
+    (section.commands || []).forEach((cmd) => {
+      const innerW = colW - 8;
+      const descLines = doc.splitTextToSize(cmd.description || '', innerW);
+      const cmdText = (cmd.command || '').replace(/\r/g, '');
+      // Splitting monospace text — switch font BEFORE measuring to get
+      // accurate character widths.
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7.6);
+      const cmdLines = doc.splitTextToSize(cmdText, innerW);
+      const cmdH = cmdLines.length * 9.2;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      const descH = descLines.length * 8.6;
+      const entryH = descH + cmdH + 10;
+
+      if (curY + entryH > colBottom) {
+        advanceColumn();
+        // Continuation header — slimmer, same color, "(cont.)" suffix
+        doc.setFillColor(...color);
+        doc.roundedRect(colX(curCol), curY, colW, sectionHeaderH, 3, 3, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.text(`${sectionName} (CONT.)`, colX(curCol) + 7, curY + 12);
+        curY += sectionHeaderH + 4;
+      }
+
+      // Description line
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(95, 95, 95);
+      doc.text(descLines, colX(curCol) + 4, curY + 7);
+      curY += descH + 1;
+
+      // Subtle command pill background
+      doc.setFillColor(248, 247, 244);
+      doc.roundedRect(colX(curCol) + 2, curY - 1, colW - 4, cmdH + 6, 2, 2, 'F');
+
+      // Command (monospace bold)
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7.6);
+      doc.setTextColor(20, 20, 20);
+      doc.text(cmdLines, colX(curCol) + 5, curY + 7);
+      curY += cmdH + 8;
     });
 
-    cursorY = doc.lastAutoTable.finalY + 24;
-    if (idx < sheet.sections.length - 1 && cursorY > pageH - 100) { doc.addPage(); cursorY = margin; }
+    curY += sectionGap;
   });
 
+  drawFooter();
   doc.save(`${slugify(sheet.product)}-cli-v${sheet.version}-cheatsheet.pdf`);
 }
 
@@ -529,14 +759,21 @@ function DocsPanel({ entries }) {
 // ═══════════════════════════════════════════════════════════════════
 // CHEAT SHEET TAB
 // ═══════════════════════════════════════════════════════════════════
-function CheatSheetTab({ onNeedApiKey }) {
+function CheatSheetTab({ versions, onNeedApiKey }) {
+  const PRODUCT_VERS = versions.cheatsheet;
   const [product, setProduct] = useState('FortiGate');
-  const [version, setVersion] = useState(PRODUCT_VERS['FortiGate'][0]);
+  const [version, setVersion] = useState((PRODUCT_VERS['FortiGate'] || [''])[0]);
   const [selectedCats, setSelectedCats] = useState(() => new Set(PRODUCT_CATS['FortiGate']));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sheet, setSheet] = useState(null);
   const [truncated, setTruncated] = useState(false);
+
+  // If the version list updates from remote, snap the selected version into it.
+  useEffect(() => {
+    const list = PRODUCT_VERS[product] || [];
+    if (list.length > 0 && !list.includes(version)) setVersion(list[0]);
+  }, [PRODUCT_VERS, product]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cats = PRODUCT_CATS[product] || [];
 
@@ -568,7 +805,7 @@ function CheatSheetTab({ onNeedApiKey }) {
       const response = await callClaude({
         system: CHEAT_SYSTEM,
         messages: [{ role: 'user', content: buildCheatPrompt(product, version.trim(), chosen) }],
-        max_tokens: 8000,
+        max_tokens: 5000,
       });
       const wasTruncated = response?.stop_reason === 'max_tokens';
       const parsed = parseJSON(extractText(response));
@@ -582,7 +819,7 @@ function CheatSheetTab({ onNeedApiKey }) {
     }
   };
 
-  const versions = PRODUCT_VERS[product] || [];
+  const productVersions = PRODUCT_VERS[product] || [];
 
   return (
     <div>
@@ -600,17 +837,13 @@ function CheatSheetTab({ onNeedApiKey }) {
           </div>
           <div>
             <Label>Firmware version</Label>
-            <input type="text" list="forti-versions" value={version}
-              onChange={e => setVersion(e.target.value)}
-              placeholder="e.g. 7.4.4"
-              style={{
-                width: '100%', padding: '12px 14px', background: T.surface,
-                border: `1px solid ${T.border}`, borderRadius: '10px',
-                color: T.text, fontSize: '14px', fontFamily: fonts.body,
-              }} />
-            <datalist id="forti-versions">
-              {versions.map(v => <option key={v} value={v} />)}
-            </datalist>
+            <select value={version} onChange={e => setVersion(e.target.value)} style={{
+              width: '100%', padding: '12px 14px', background: T.surface,
+              border: `1px solid ${T.border}`, borderRadius: '10px',
+              color: T.text, fontSize: '14px', fontFamily: fonts.body,
+            }}>
+              {productVersions.map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
           </div>
         </div>
 
@@ -651,12 +884,7 @@ function CheatSheetTab({ onNeedApiKey }) {
         </PrimaryButton>
       </div>
 
-      {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '20px', color: T.textDim }}>
-          <div style={{ width: '20px', height: '20px', border: `2px solid ${T.border}`, borderTop: `2px solid ${T.accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <span style={{ fontSize: '14px' }}>Generating CLI reference for {product} {version}…</span>
-        </div>
-      )}
+      {loading && <LoadingPanel statusMessages={CHEAT_STATUSES} jokes={DAD_JOKES} />}
 
       {sheet && (
         <div>
@@ -683,112 +911,21 @@ function CheatSheetTab({ onNeedApiKey }) {
             </div>
           )}
 
-          <CheatSheetPoster sheet={sheet} />
           <CheatSheetDetails sheet={sheet} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Poster view — dense, scannable, multi-column. All sections visible at once.
-// Designed to look like a pinned wall reference (Wireshark-cheat-sheet style).
-function CheatSheetPoster({ sheet }) {
-  return (
-    <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: '14px', padding: '24px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-      marginBottom: '32px',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        paddingBottom: '14px', marginBottom: '18px', borderBottom: `2px solid ${T.accent}`,
-      }}>
-        <div>
-          <div style={{ fontSize: '11px', fontWeight: '600', color: T.accent, letterSpacing: '1px', textTransform: 'uppercase', fontFamily: fonts.mono, marginBottom: '4px' }}>
-            Cheat Sheet
-          </div>
-          <div style={{ fontSize: '18px', fontWeight: '700', color: T.text, letterSpacing: '-0.2px' }}>
-            {sheet.product} <span style={{ color: T.textDim, fontWeight: '500' }}>v{sheet.version}</span>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ columns: '300px 3', columnGap: '22px' }}>
-        {(sheet.sections || []).map((sec, i) => (
-          <div key={i} style={{
-            breakInside: 'avoid', pageBreakInside: 'avoid',
-            display: 'inline-block', width: '100%',
-            marginBottom: '18px',
+          <div style={{
+            fontSize: '12.5px', color: T.textDim, textAlign: 'center',
+            padding: '20px 16px', marginTop: '24px',
+            background: T.surfaceAlt, border: `1px dashed ${T.border}`,
+            borderRadius: '12px', lineHeight: '1.6',
           }}>
-            <div style={{
-              background: T.accent, color: T.textInverse,
-              fontSize: '11px', fontWeight: '700', letterSpacing: '0.6px', textTransform: 'uppercase',
-              fontFamily: fonts.mono,
-              padding: '7px 11px', borderRadius: '6px 6px 0 0',
-            }}>
-              {sec.name}
-            </div>
-            <div style={{
-              border: `1px solid ${T.border}`, borderTop: 'none',
-              borderRadius: '0 0 6px 6px', padding: '4px 0',
-            }}>
-              {(sec.commands || []).map((cmd, j) => (
-                <PosterCommand key={j} cmd={cmd} last={j === sec.commands.length - 1} />
-              ))}
-            </div>
+            💡 The on-screen view is the working list. Hit <strong style={{ color: T.text }}>Export PDF</strong> for the printable poster — color-coded sections, three-column layout, wall-ready.
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PosterCommand({ cmd, last }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async (e) => {
-    e.stopPropagation();
-    try { await navigator.clipboard.writeText(cmd.command); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch {}
-  };
-  return (
-    <div
-      onClick={copy}
-      title="Click to copy"
-      style={{
-        padding: '8px 11px',
-        borderBottom: last ? 'none' : `1px solid ${T.border}`,
-        cursor: 'pointer', position: 'relative',
-        transition: 'background 0.12s',
-      }}
-      onMouseEnter={e => e.currentTarget.style.background = T.surfaceAlt}
-      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-    >
-      <div style={{
-        fontSize: '10.5px', color: T.textDim, marginBottom: '3px',
-        lineHeight: '1.35', fontWeight: '500',
-      }}>
-        {cmd.description}
-      </div>
-      <pre style={{
-        margin: 0, fontFamily: fonts.mono, fontSize: '11.5px',
-        fontWeight: '600', color: T.text,
-        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-        lineHeight: '1.4',
-      }}>{cmd.command}</pre>
-      {copied && (
-        <div style={{
-          position: 'absolute', top: '6px', right: '8px',
-          fontSize: '9.5px', fontWeight: '600', color: T.green,
-          fontFamily: fonts.mono, letterSpacing: '0.3px',
-        }}>COPIED</div>
+        </div>
       )}
     </div>
   );
 }
 
-// Details — full per-command view with notes and copy buttons. Lives below
-// the poster so the at-a-glance cheat sheet stays uncluttered.
 function CheatSheetDetails({ sheet }) {
   const sections = (sheet.sections || []).filter(s => (s.commands || []).length > 0);
   if (sections.length === 0) return null;
@@ -855,13 +992,21 @@ function CheatSheetDetails({ sheet }) {
 // ═══════════════════════════════════════════════════════════════════
 // DIFF TAB
 // ═══════════════════════════════════════════════════════════════════
-function DiffTab({ onNeedApiKey }) {
-  const [fromVer, setFromVer] = useState(FGT_DIFF_VERS[1]);
-  const [toVer, setToVer] = useState(FGT_DIFF_VERS[0]);
+function DiffTab({ versions, onNeedApiKey }) {
+  const branches = versions.diffBranches || FALLBACK_VERSIONS.diffBranches;
+  const [fromVer, setFromVer] = useState(branches[1] || branches[0]);
+  const [toVer, setToVer] = useState(branches[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [diff, setDiff] = useState(null);
   const [truncated, setTruncated] = useState(false);
+
+  // If remote versions arrive with new branches, snap the selections into them.
+  useEffect(() => {
+    if (branches.length === 0) return;
+    if (!branches.includes(fromVer)) setFromVer(branches[1] || branches[0]);
+    if (!branches.includes(toVer)) setToVer(branches[0]);
+  }, [branches]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generate = async () => {
     if (loading || !fromVer.trim() || !toVer.trim()) return;
@@ -895,30 +1040,25 @@ function DiffTab({ onNeedApiKey }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
           <div>
             <Label>From version</Label>
-            <input type="text" list="diff-vers" value={fromVer}
-              onChange={e => setFromVer(e.target.value)}
-              placeholder="e.g. 7.2.x"
-              style={{
-                width: '100%', padding: '12px 14px', background: T.surface,
-                border: `1px solid ${T.border}`, borderRadius: '10px',
-                color: T.text, fontSize: '14px', fontFamily: fonts.body,
-              }} />
+            <select value={fromVer} onChange={e => setFromVer(e.target.value)} style={{
+              width: '100%', padding: '12px 14px', background: T.surface,
+              border: `1px solid ${T.border}`, borderRadius: '10px',
+              color: T.text, fontSize: '14px', fontFamily: fonts.body,
+            }}>
+              {branches.map(v => <option key={v} value={v}>FortiOS {v}</option>)}
+            </select>
           </div>
           <div>
             <Label>To version</Label>
-            <input type="text" list="diff-vers" value={toVer}
-              onChange={e => setToVer(e.target.value)}
-              placeholder="e.g. 7.4.x"
-              style={{
-                width: '100%', padding: '12px 14px', background: T.surface,
-                border: `1px solid ${T.border}`, borderRadius: '10px',
-                color: T.text, fontSize: '14px', fontFamily: fonts.body,
-              }} />
+            <select value={toVer} onChange={e => setToVer(e.target.value)} style={{
+              width: '100%', padding: '12px 14px', background: T.surface,
+              border: `1px solid ${T.border}`, borderRadius: '10px',
+              color: T.text, fontSize: '14px', fontFamily: fonts.body,
+            }}>
+              {branches.map(v => <option key={v} value={v}>FortiOS {v}</option>)}
+            </select>
           </div>
         </div>
-        <datalist id="diff-vers">
-          {FGT_DIFF_VERS.map(v => <option key={v} value={v} />)}
-        </datalist>
 
         <div style={{ fontSize: '12px', color: T.textDim, marginBottom: '16px', lineHeight: '1.55' }}>
           Generates a CLI diff across the entire FortiOS surface — system, routing, VPN, SD-WAN, HA, firewall, NAT, certificates, VDOM, logging, FortiGuard, wireless, debugging. Each entry is tagged with its functional area.
@@ -937,12 +1077,7 @@ function DiffTab({ onNeedApiKey }) {
         </PrimaryButton>
       </div>
 
-      {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '20px', color: T.textDim }}>
-          <div style={{ width: '20px', height: '20px', border: `2px solid ${T.border}`, borderTop: `2px solid ${T.accent}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <span style={{ fontSize: '14px' }}>Comparing FortiOS {fromVer} → {toVer} across all CLI areas…</span>
-        </div>
-      )}
+      {loading && <LoadingPanel statusMessages={DIFF_STATUSES} jokes={DAD_JOKES} />}
 
       {diff && (
         <div>
@@ -1091,6 +1226,13 @@ function DiffRow({ command, description, area }) {
 // ═══════════════════════════════════════════════════════════════════
 export default function FortiCLI({ onNeedApiKey }) {
   const [tab, setTab] = useState('sheet');
+  const [versions, setVersions] = useState(FALLBACK_VERSIONS);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadVersions().then(data => { if (!cancelled) setVersions(data); });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div>
@@ -1112,8 +1254,8 @@ export default function FortiCLI({ onNeedApiKey }) {
         })}
       </div>
 
-      {tab === 'sheet' && <CheatSheetTab onNeedApiKey={onNeedApiKey} />}
-      {tab === 'diff' && <DiffTab onNeedApiKey={onNeedApiKey} />}
+      {tab === 'sheet' && <CheatSheetTab versions={versions} onNeedApiKey={onNeedApiKey} />}
+      {tab === 'diff' && <DiffTab versions={versions} onNeedApiKey={onNeedApiKey} />}
     </div>
   );
 }
